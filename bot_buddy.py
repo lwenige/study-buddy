@@ -24,6 +24,14 @@ import base64
 from pathlib import Path
 import streamlit.components.v1 as components
 
+
+st.set_page_config(
+    page_title="Study Buddy - BTID",
+    page_icon="📘",
+    layout="wide",
+    initial_sidebar_state="collapsed",
+)
+
 COUNSELING = True
 
 SYSTEM_PROMPT = """
@@ -129,6 +137,31 @@ class GraphState(TypedDict):
     llm: object
 
 
+def display_pdf(pdf_path: str):
+    pdf_file = Path(pdf_path)
+
+    if not pdf_file.exists():
+        st.warning(f"PDF nicht gefunden: {pdf_path}")
+        return
+
+    try:
+        pdf_bytes = pdf_file.read_bytes()
+        b64_pdf = base64.b64encode(pdf_bytes).decode("utf-8")
+
+        pdf_display = f"""
+        <iframe
+            src="data:application/pdf;base64,{b64_pdf}"
+            width="100%"
+            height="780"
+            type="application/pdf">
+        </iframe>
+        """
+
+        components.html(pdf_display, height=800)
+
+    except Exception as e:
+        st.error(f"Fehler beim Laden der PDF: {e}")
+
 @st.cache_resource
 def get_chroma_collection():
     embedding_fn = JinaEmbeddingFunction()
@@ -211,13 +244,6 @@ if "app_graph" not in st.session_state or "llm" not in st.session_state:
     st.session_state.app_graph = app_graph
     st.session_state.llm = llm
 
-st.set_page_config(
-    page_title="Study Buddy - BTID",
-    page_icon="📘",
-    layout="wide",
-    initial_sidebar_state="collapsed",
-)
-
 st.title("Study Buddy - BTID")
 
 with st.sidebar:
@@ -227,19 +253,13 @@ with st.sidebar:
     }
 
     st.subheader("PDF")
-    selected_pdf = st.selectbox("Dokument", list(PDF_OPTIONS.keys()))
-    pdf_path = PDF_OPTIONS[selected_pdf]
 
-    try:
-        #pdf_bytes = Path(pdf_path).read_bytes()
-        #b64_pdf = base64.b64encode(pdf_bytes).decode("utf-8")
+    selected_pdf = st.selectbox(
+        "Dokument",
+        list(PDF_OPTIONS.keys())
+    )
 
-        st.iframe(Path(pdf_path),
-            height=780,
-        )
-
-    except FileNotFoundError:
-        st.warning(f"PDF nicht gefunden: {pdf_path}")
+    display_pdf(PDF_OPTIONS[selected_pdf])
 
 
 # Display chat history
