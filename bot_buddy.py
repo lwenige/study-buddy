@@ -1,3 +1,4 @@
+import urllib
 from typing import TypedDict, Annotated, List
 from operator import add
 
@@ -20,8 +21,6 @@ from query_tool import QueryTool
 from search_tool import SearchTool
 from fill_db import JinaEmbeddingFunction
 
-import base64
-from pathlib import Path
 import streamlit.components.v1 as components
 
 
@@ -137,30 +136,17 @@ class GraphState(TypedDict):
     llm: object
 
 
-def display_pdf(pdf_path: str):
-    pdf_file = Path(pdf_path)
+def display_pdf(pdf_url: str):
+    viewer_url = (
+        "https://mozilla.github.io/pdf.js/web/viewer.html?file="
+        + urllib.parse.quote(pdf_url, safe=":/?=&")
+    )
 
-    if not pdf_file.exists():
-        st.warning(f"PDF nicht gefunden: {pdf_path}")
-        return
-
-    try:
-        pdf_bytes = pdf_file.read_bytes()
-        b64_pdf = base64.b64encode(pdf_bytes).decode("utf-8")
-
-        pdf_display = f"""
-        <iframe
-            src="data:application/pdf;base64,{b64_pdf}"
-            width="100%"
-            height="780"
-            type="application/pdf">
-        </iframe>
-        """
-
-        components.html(pdf_display, height=800)
-
-    except Exception as e:
-        st.error(f"Fehler beim Laden der PDF: {e}")
+    components.iframe(
+        viewer_url,
+        height=800,
+        scrolling=True,
+    )
 
 @st.cache_resource
 def get_chroma_collection():
@@ -248,8 +234,8 @@ st.title("Study Buddy - BTID")
 
 with st.sidebar:
     PDF_OPTIONS = {
-        "Modulhandbuch": "documents/modulhandbuch.pdf",
-        "Prüfungsordnung": "documents/pruefungsordnung.pdf",
+        "Modulhandbuch": "https://www.hs-merseburg.de/fileadmin/Studium/Studiengaenge/Technisches_Informationsdesign/Modulhandbuch_Technisches_Informationsdesign_v1_7.pdf",
+        "Prüfungsordnung": "https://www.hs-merseburg.de/fileadmin/Studium/Studiengaenge/Technisches_Informationsdesign/2025_2725_BTID.pdf",
     }
 
     st.subheader("PDF")
